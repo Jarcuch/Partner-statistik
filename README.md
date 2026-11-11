@@ -1,13 +1,7 @@
-Partner Statistik 2.2 – GitHub Pages
+Partner Statistik 2.4 – aktualizace ikony
 
-Nové: profilové fotografie partnerů (zmenšené na 320 × 320 px), export/import JSON včetně fotografií.
+Založeno na funkční verzi 2.3. Nové fialové logo pro iPhone: icon-180.png, icon-192.png a icon-512.png. Obnovená verze cache a manifestu. Funkce a datové klíče beze změny.
 
-Instalace: rozbalit ZIP, nahrát soubory do kořene repozitáře, GitHub Pages main/root. Zachovat URL a úložiště prohlížeče.
+Postup: Před aktualizací exportujte JSON zálohu v aplikaci. Rozbalte ZIP a nahrajte všechny soubory do kořene stávajícího GitHub repozitáře, přepište stejnojmenné soubory. Zachovejte stejnou adresu GitHub Pages. Nová ikona na ploše iPhonu se může projevit až po odebrání staré zástupné ikony a opětovném přidání z Safari; nejprve ověřte data přes původní instalaci a mějte zálohu.
 
-DŮLEŽITÉ: Před aktualizací vytvořte zálohu. Export JSON obsahuje citlivé osobní údaje i fotografie a není šifrovaný. Nikdy jej nenahrávejte do veřejného repozitáře. PIN se neexportuje. Fotografie a data jsou v localStorage konkrétního prohlížeče; vymazání dat webu je odstraní.
-
-Face ID a šifrování dat nejsou implementovány.
-
-
-## Oprava verze 2.3
-Do spodní navigace bylo přidáno **Nastavení**. Zde jsou dostupné Exportovat všechna data (JSON), Importovat data (JSON) a změna PINu. Data zůstávají uložena pod původním klíčem prohlížeče.
+Upozornění: Osobní data a fotografie zůstávají v úložišti prohlížeče. Nikdy nenahrávejte JSON zálohy na veřejný GitHub. PIN nešifruje lokální data.
