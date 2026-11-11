@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Partner Statistik">
-<link rel="manifest" href="manifest.webmanifest?v=24">
-<link rel="apple-touch-icon" href="icon-180.png?v=24">
+<link rel="manifest" href="manifest.webmanifest?v=25">
+<link rel="apple-touch-icon" href="icon-180.png?v=25">
 <title>Partner Statistik</title>
 <style>
 :root{color-scheme:dark;--bg:#0e1119;--panel:#191f2b;--panel2:#222a39;--muted:#9ba6b8;--text:#f5f6fa;--accent:#a78bfa;--line:#30394a;--danger:#ff647c}
@@ -29,7 +29,10 @@ nav span{display:block;font-size:20px;margin-bottom:3px}
 .partner{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.dot{width:14px;height:14px;border-radius:50%;flex:none}.avatar{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:700;overflow:hidden;flex:none}.avatar img{width:100%;height:100%;object-fit:cover}.photo-preview{width:96px;height:96px;border-radius:18px;object-fit:cover;display:block;margin:10px 0;border:1px solid var(--line)}
 .partner .info{flex:1;min-width:0}.partner .info b{display:block}.partner .info small{color:var(--muted)}
 .hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap}.barline{display:grid;grid-template-columns:minmax(65px,1fr) 2fr 28px;gap:8px;align-items:center;margin:11px 0;font-size:13px}.track{height:11px;background:#30394a;border-radius:9px;overflow:hidden}.fill{height:100%;border-radius:9px}
-#gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}#gate .card{width:min(100%,360px);padding:25px}
+#gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;position:relative;isolation:isolate;overflow:hidden;background:#170726}
+#gate::before{content:"";position:absolute;inset:0;background:url("icon-512.png") center center/cover no-repeat;opacity:.68;z-index:-2}
+#gate::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,7,22,.36),rgba(9,7,22,.75));z-index:-1}
+#gate .card{width:min(100%,360px);padding:25px;background:rgba(19,17,33,.87);border:1px solid rgba(194,159,255,.4);box-shadow:0 16px 55px rgba(0,0,0,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:16px;right:16px;background:#293347;border:1px solid var(--line);padding:13px;border-radius:12px;z-index:20;text-align:center}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 </style>
