@@ -20,7 +20,7 @@ main{padding:0 16px;max-width:720px;margin:auto}.muted,.sub{color:var(--muted)}.
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric strong{display:block;font-size:30px;margin:5px 0}.metric span{font-size:13px;color:var(--muted)}
 button,.btn{border:0;border-radius:13px;background:var(--accent);color:#171322;padding:12px 15px;font-size:15px;font-weight:650;cursor:pointer}
 button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:#542532;color:#ffdce2}
-button.small{padding:8px 11px;font-size:13px}.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+button.small{padding:8px 11px;font-size:13px}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.chip{background:#30394a;border-radius:20px;padding:7px 10px;font-size:13px}.chip button{background:transparent;color:#ff9aa9;padding:0 0 0 8px}.checks label{display:flex;gap:10px;align-items:center;background:#222a39;padding:10px;border-radius:10px;margin:7px 0}.checks input{width:auto;margin:0}.settings-select{margin-top:5px}.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
 input,select{width:100%;background:#111722;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;margin:5px 0 12px}
 label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
 nav{position:fixed;bottom:0;left:0;right:0;padding:9px 8px calc(9px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);background:#151b26;border-top:1px solid var(--line);z-index:5}
@@ -80,8 +80,13 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <section id="settings" class="page hidden">
  <h2>Nastavení a data</h2>
  <div class="card"><h3>Záloha</h3><p class="sub">Exportujte soubor se všemi partnery a záznamy. Uložte jej na bezpečné místo.</p><div class="actions"><button onclick="exportData()">Exportovat zálohu</button><button class="secondary" onclick="document.getElementById('importFile').click()">Obnovit zálohu</button><input id="importFile" type="file" accept="application/json" class="hidden"></div></div>
- <div class="card"><h3>Změna PINu</h3><label>Současný PIN</label><input id="oldPin" type="password" inputmode="numeric"><label>Nový PIN</label><input id="newPin" type="password" inputmode="numeric"><button onclick="changePin()">Změnit PIN</button></div>
- <div class="card"><h3>Soukromí</h3><p class="sub">Údaje se ukládají v úložišti prohlížeče tohoto iPhonu. PIN obrazovka není šifrováním databáze. Nevytvářejte záznamy na sdíleném zařízení. Pravidelně exportujte zálohu.</p><button class="secondary" onclick="lockApp()">Uzamknout aplikaci</button></div>
+ <div class="card"><h3>Zabezpečení</h3>
+ <label>Automatické zamykání</label><select id="lockDelay" onchange="updateSecurity()"><option value="0">Při opuštění aplikace</option><option value="1">Po 1 minutě</option><option value="5">Po 5 minutách</option><option value="15">Po 15 minutách</option></select>
+ <label><input type="checkbox" id="limitAttempts" onchange="updateSecurity()" style="width:auto"> Dočasně blokovat po 5 chybných pokusech</label>
+ <label><input type="checkbox" id="secureActions" onchange="updateSecurity()" style="width:auto"> Vyžadovat PIN před importem zálohy</label>
+ <button class="secondary" onclick="lockApp()">🔒 Zamknout nyní</button><hr>
+ <h3>Změna PINu</h3><label>Současný PIN</label><input id="oldPin" type="password" inputmode="numeric" autocomplete="off"><label>Nový PIN (4–8 číslic)</label><input id="newPin" type="password" inputmode="numeric" autocomplete="off"><label>Potvrzení nového PINu</label><input id="newPin2" type="password" inputmode="numeric" autocomplete="off"><button onclick="changePin()">Změnit PIN</button></div>
+ <div class="card"><h3>Soukromí</h3><p class="sub">Údaje se ukládají v úložišti prohlížeče tohoto iPhonu. PIN chrání vstup do aplikace, ale data v úložišti prohlížeče nejsou šifrovaná. Face ID není v této verzi podporováno. Nevytvářejte záznamy na sdíleném zařízení. Pravidelně exportujte zálohu.</p><button class="secondary" onclick="lockApp()">Uzamknout aplikaci</button></div>
 </section>
 </main>
 <nav>
@@ -100,7 +105,10 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <div id="toast" class="toast hidden"></div>
 <script>
 const KEY='partnerStatistik.v1', PINKEY='partnerStatistik.pin.v1';
-let db={partners:[],records:[]}, editing=null, modalKind='';
+let db={partners:[],records:[]}, editing=null, modalKind='', workingHobbies=[], currentRecordHobbies=[];
+const SEC='partnerStatistik.security.v2',FAIL='partnerStatistik.fail.v2';
+let security={delay:0,limit:true,confirm:true},lastActivity=Date.now(),hiddenAt=0;
+try{security={...security,...JSON.parse(localStorage.getItem(SEC)||'{}')}}catch{}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>crypto.randomUUID();
@@ -108,6 +116,12 @@ const fmt=d=>new Date(d).toLocaleString('cs-CZ',{dateStyle:'medium',timeStyle:'s
 const colorSet=['#9b87f5','#ec6b91','#36b8a4','#4d9be8','#e69b45','#e45e61','#7dba65','#ba83d8'];
 function load(){try{db=JSON.parse(localStorage.getItem(KEY))||{partners:[],records:[]}}catch{db={partners:[],records:[]}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function updateSecurity(){security={delay:Number($('lockDelay').value),limit:$('limitAttempts').checked,confirm:$('secureActions').checked};localStorage.setItem(SEC,JSON.stringify(security));toast('Zabezpečení uloženo.')}
+function syncSecurity(){$('lockDelay').value=String(security.delay);$('limitAttempts').checked=security.limit;$('secureActions').checked=security.confirm}
+function touch(){lastActivity=Date.now()}
+['pointerdown','keydown'].forEach(e=>document.addEventListener(e,touch,{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();if(security.delay===0&&!$('app').classList.contains('hidden'))lockApp()}else if(hiddenAt&&security.delay>0&&Date.now()-hiddenAt>=security.delay*60000&&!$('app').classList.contains('hidden'))lockApp()});
+setInterval(()=>{if(security.delay>0&&!document.hidden&&!$('app').classList.contains('hidden')&&Date.now()-lastActivity>=security.delay*60000)lockApp()},10000);
 function toast(s){$('toast').textContent=s;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),2300)}
 function hash(s){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))}
 async function initGate(){
@@ -116,15 +130,16 @@ async function initGate(){
  $('gateBtn').onclick=async()=>{
   const p=$('pin').value;
   if(!/^\d{4,12}$/.test(p))return $('gateError').textContent='PIN musí mít 4 až 12 číslic.';
+  const fail=JSON.parse(localStorage.getItem(FAIL)||'{"count":0,"until":0}');if(security.limit&&Date.now()<fail.until)return $('gateError').textContent='Příliš mnoho pokusů. Zkuste to za '+Math.ceil((fail.until-Date.now())/60000)+' min.';
   if(!exists){if(p!==$('pin2').value)return $('gateError').textContent='PIN kódy se neshodují.';localStorage.setItem(PINKEY,await hash(p));unlock()}
-  else if(await hash(p)===exists)unlock();else{$('gateError').textContent='Nesprávný PIN.';$('pin').value=''}
+  else if(await hash(p)===exists){localStorage.removeItem(FAIL);unlock()}else{const f=JSON.parse(localStorage.getItem(FAIL)||'{"count":0,"until":0}');f.count++;if(security.limit&&f.count>=5){f.count=0;f.until=Date.now()+5*60000}localStorage.setItem(FAIL,JSON.stringify(f));$('gateError').textContent=f.until>Date.now()?'Příliš mnoho pokusů. Počkejte 5 minut.':'Nesprávný PIN.';$('pin').value=''}
  };
 }
-function unlock(){load();$('gate').classList.add('hidden');$('app').classList.remove('hidden');$('today').textContent=new Date().toLocaleDateString('cs-CZ',{dateStyle:'full'});render()}
-function lockApp(){$('app').classList.add('hidden');$('gate').classList.remove('hidden');$('pin').value='';$('gateError').textContent='';initGate()}
+function unlock(){lastActivity=Date.now();syncSecurity();load();$('gate').classList.add('hidden');$('app').classList.remove('hidden');$('today').textContent=new Date().toLocaleDateString('cs-CZ',{dateStyle:'full'});render()}
+function lockApp(){closeModal();$('app').classList.add('hidden');$('gate').classList.remove('hidden');$('pin').value='';$('gateError').textContent='';initGate()}
 function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(p).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));render()}
 function partnerName(id){const p=db.partners.find(x=>x.id===id);return p?(p.nickname||p.name):'Smazaný partner'}
-function rowRecord(r){const p=db.partners.find(x=>x.id===r.partnerId);return `<div class="partner"><i class="dot" style="background:${p?.color||'#777'}"></i><div class="info"><b>${esc(p?.nickname||p?.name||'Neznámý partner')}</b><small>${esc(fmt(r.date))}</small></div><button class="small secondary" onclick="openRecord('${r.id}')">Upravit</button><button class="small danger" onclick="deleteRecord('${r.id}')">×</button></div>`}
+function rowRecord(r){const p=db.partners.find(x=>x.id===r.partnerId);return `<div class="partner"><i class="dot" style="background:${p?.color||'#777'}"></i><div class="info"><b>${esc(p?.nickname||p?.name||'Neznámý partner')}</b><small>${esc(fmt(r.date))}${Array.isArray(r.hobbies)&&r.hobbies.length?' · '+esc(r.hobbies.join(', ')):''}</small></div><button class="small secondary" onclick="openRecord('${r.id}')">Upravit</button><button class="small danger" onclick="deleteRecord('${r.id}')">×</button></div>`}
 function render(){
  $('totalCount').textContent=db.records.length;$('partnerCount').textContent=db.partners.length;
  $('recent').innerHTML=db.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rowRecord).join('')||'<p class="sub">Zatím žádné záznamy.</p>';
@@ -141,9 +156,17 @@ function openPartner(id){
  <label>Jméno</label><input id="pName" value="${esc(p?.name||'')}" placeholder="Jméno">
  <label>Přezdívka (nepovinné)</label><input id="pNick" value="${esc(p?.nickname||'')}" placeholder="Přezdívka">
  <label>Barva</label><div class="row" style="flex-wrap:wrap">${colorSet.map(c=>`<button class="small" style="background:${c};width:38px;height:38px;padding:0;border:2px solid ${(p?.color||colorSet[0])===c?'white':'transparent'}" onclick="document.getElementById('pColor').value='${c}'"></button>`).join('')}</div>
- <input id="pColor" type="color" value="${p?.color||colorSet[0]}"><button style="width:100%" onclick="savePartner()">Uložit partnera</button>`);
+ <input id="pColor" type="color" value="${p?.color||colorSet[0]}">
+ <label>Záliby</label><div id="hobbyChips" class="chips"></div>
+ <div class="row"><input id="newHobby" placeholder="Nová záliba" style="margin:0"><button type="button" onclick="addHobby()">＋</button></div>
+ <p class="sub">Záliby můžeš přidávat a odebírat. Historické záznamy zůstanou zachované.</p>
+ <button style="width:100%" onclick="savePartner()">Uložit partnera</button>`);
+ workingHobbies=Array.isArray(p?.hobbies)?[...p.hobbies]:[];renderHobbyChips();
 }
-function savePartner(){const name=$('pName').value.trim();if(!name)return toast('Vyplňte jméno.');const item={id:editing||uid(),name,nickname:$('pNick').value.trim(),color:$('pColor').value};if(editing)db.partners=db.partners.map(p=>p.id===editing?item:p);else db.partners.push(item);closeModal();save();toast('Partner uložen.')}
+function renderHobbyChips(){$('hobbyChips').innerHTML=workingHobbies.map((h,i)=>`<span class="chip">${esc(h)} <button type="button" onclick="removeHobby(${i})" aria-label="Odebrat">×</button></span>`).join('')||'<span class="sub">Zatím žádné záliby.</span>'}
+function addHobby(){const h=$('newHobby').value.trim();if(!h)return;if(workingHobbies.some(x=>x.toLowerCase()===h.toLowerCase()))return toast('Záliba již existuje.');workingHobbies.push(h);$('newHobby').value='';renderHobbyChips()}
+function removeHobby(i){workingHobbies.splice(i,1);renderHobbyChips()}
+function savePartner(){const name=$('pName').value.trim();if(!name)return toast('Vyplňte jméno.');const item={id:editing||uid(),name,nickname:$('pNick').value.trim(),color:$('pColor').value,hobbies:[...workingHobbies]};if(editing)db.partners=db.partners.map(p=>p.id===editing?item:p);else db.partners.push(item);closeModal();save();toast('Partner uložen.')}
 function deletePartner(id){const p=db.partners.find(x=>x.id===id);if(!confirm(`Smazat partnera ${p.name} a všechny jeho záznamy?`))return;db.partners=db.partners.filter(x=>x.id!==id);db.records=db.records.filter(x=>x.partnerId!==id);save()}
 function openRecord(id){
  if(!db.partners.length)return toast('Nejdříve přidejte partnera.');
@@ -151,9 +174,13 @@ function openRecord(id){
  openModal(r?'Upravit záznam':'Nový záznam',`
  <label>Partner</label><select id="rPartner">${db.partners.map(p=>`<option value="${p.id}" ${p.id===r?.partnerId?'selected':''}>${esc(p.nickname||p.name)}</option>`).join('')}</select>
  <label>Datum a čas</label><input id="rDate" type="datetime-local" value="${local}">
+ <label>Záliby (lze vybrat více)</label><div id="recordHobbyChecks" class="checks"></div>
  <button style="width:100%" onclick="saveRecord()">Uložit záznam</button>`);
+ currentRecordHobbies=Array.isArray(r?.hobbies)?[...r.hobbies]:[];
+ $('rPartner').addEventListener('change',()=>{currentRecordHobbies=[];renderRecordHobbies()});renderRecordHobbies();
 }
-function saveRecord(){const date=new Date($('rDate').value);if(!Number.isFinite(date.getTime()))return toast('Zkontrolujte datum a čas.');const item={id:editing||uid(),partnerId:$('rPartner').value,date:date.toISOString()};if(editing)db.records=db.records.map(r=>r.id===editing?item:r);else db.records.push(item);closeModal();save();toast('Záznam uložen.')}
+function renderRecordHobbies(){const p=db.partners.find(x=>x.id===$('rPartner').value);const list=[...new Set([...(p?.hobbies||[]),...currentRecordHobbies])];$('recordHobbyChecks').innerHTML=list.map((h,i)=>`<label><input type="checkbox" data-hobby="${i}" ${currentRecordHobbies.includes(h)?'checked':''}><span>${esc(h)}${!(p?.hobbies||[]).includes(h)?' (historická)':''}</span></label>`).join('')||'<p class="sub">Partner nemá žádné záliby.</p>';$('recordHobbyChecks').querySelectorAll('input').forEach((input,i)=>input.addEventListener('change',()=>{const h=list[i];currentRecordHobbies=input.checked?[...new Set([...currentRecordHobbies,h])]:currentRecordHobbies.filter(x=>x!==h)}))}
+function saveRecord(){const date=new Date($('rDate').value);if(!Number.isFinite(date.getTime()))return toast('Zkontrolujte datum a čas.');const item={id:editing||uid(),partnerId:$('rPartner').value,date:date.toISOString(),hobbies:[...currentRecordHobbies]};if(editing)db.records=db.records.map(r=>r.id===editing?item:r);else db.records.push(item);closeModal();save();toast('Záznam uložen.')}
 function deleteRecord(id){if(!confirm('Opravdu chcete tento záznam smazat?'))return;db.records=db.records.filter(r=>r.id!==id);save()}
 function renderStats(){
  const all=$('allTime').checked;$('dateFilters').classList.toggle('hidden',all);
@@ -168,10 +195,10 @@ function renderStats(){
  $('topPartner').innerHTML=counts.length?`<b>Nejčastější partner:</b><p>${esc(counts[0].p.nickname||counts[0].p.name)} · ${counts[0].n} záznamů</p>`:'<p class="sub">Zatím bez statistiky.</p>';
 }
 $('allTime').addEventListener('change',renderStats);$('fromDate').addEventListener('change',renderStats);$('toDate').addEventListener('change',renderStats);
-async function changePin(){const old=$('oldPin').value,n=$('newPin').value;if(await hash(old)!==localStorage.getItem(PINKEY))return toast('Současný PIN není správný.');if(!/^\d{4,12}$/.test(n))return toast('Nový PIN musí mít 4 až 12 číslic.');localStorage.setItem(PINKEY,await hash(n));$('oldPin').value='';$('newPin').value='';toast('PIN změněn.')}
+async function changePin(){const old=$('oldPin').value,n=$('newPin').value;if(await hash(old)!==localStorage.getItem(PINKEY))return toast('Současný PIN není správný.');if(!/^\d{4,8}$/.test(n))return toast('Nový PIN musí mít 4 až 8 číslic.');if(n!==$('newPin2').value)return toast('Nové PINy se neshodují.');localStorage.setItem(PINKEY,await hash(n));$('oldPin').value='';$('newPin').value='';$('newPin2').value='';toast('PIN změněn.')}
 function exportData(){const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),...db},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='partner-statistik-zaloha.json';a.click();URL.revokeObjectURL(a.href)}
-$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;db={partners:x.partners,records:x.records};save();toast('Záloha obnovena.')}catch{toast('Soubor zálohy není platný.')}e.target.value=''});
-initGate();
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;if(security.confirm){const p=prompt('Pro potvrzení importu zadejte současný PIN:');if(p===null)return;if(await hash(p)!==localStorage.getItem(PINKEY))return toast('Nesprávný PIN.')}db={partners:x.partners,records:x.records};save();toast('Záloha obnovena.')}catch{toast('Soubor zálohy není platný.')}e.target.value=''});
+syncSecurity();initGate();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body></html>

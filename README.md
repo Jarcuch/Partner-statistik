@@ -1,11 +1,9 @@
-# Partner Statistik
+# Partner Statistik 2.0 – GitHub Pages
 
-Původní verze aplikace pro iPhone (bez položek „oblíbené“).
+Novinky: záliby na kartě partnera (přidávání a odebírání), vícenásobný výběr zálib u záznamů, zachování historie, změna PINu s potvrzením, automatické zamykání, ochrana po 5 chybných pokusech, PIN před importem.
 
-## GitHub Pages
-1. Nahrajte soubory z tohoto ZIPu přímo do kořene repozitáře `partner-statistik` (nikoli do podsložky).
-2. V Settings → Pages nastavte Deploy from a branch, `main`, `/(root)`.
-3. Otevřete adresu GitHub Pages v Safari na iPhonu.
-4. Safari → Sdílet → Přidat na plochu.
+## Instalace
+Rozbalte ZIP a nahrajte jednotlivé soubory do kořene stávajícího repozitáře. Ponechte stejnou adresu GitHub Pages. Před aktualizací exportujte zálohu JSON.
 
-Osobní záznamy se ukládají lokálně v prohlížeči na daném iPhonu; nejsou ukládány do GitHubu. Před mazáním dat Safari nebo změnou adresy webu vytvořte zálohu JSON přímo v aplikaci. PIN nezajišťuje šifrování uložených dat.
+## Bezpečnostní omezení
+Data v localStorage nejsou šifrovaná. PIN je zámek obrazovky, nikoli šifrování. Face ID zatím není podporováno. JSON export je nešifrovaný a obsahuje citlivé údaje. Nesdílejte ho ani ho nenahrávejte do veřejného GitHub repozitáře.
