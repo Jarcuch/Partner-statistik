@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Partner Statistik">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Partner Statistik</title>
+<style>
+:root{color-scheme:dark;--bg:#0e1119;--panel:#191f2b;--panel2:#222a39;--muted:#9ba6b8;--text:#f5f6fa;--accent:#a78bfa;--line:#30394a;--danger:#ff647c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 14px;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:25px;margin:0}h2{font-size:19px;margin:8px 0 14px}h3{font-size:16px;margin:0 0 8px}
+main{padding:0 16px;max-width:720px;margin:auto}.muted,.sub{color:var(--muted)}.sub{font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric strong{display:block;font-size:30px;margin:5px 0}.metric span{font-size:13px;color:var(--muted)}
+button,.btn{border:0;border-radius:13px;background:var(--accent);color:#171322;padding:12px 15px;font-size:15px;font-weight:650;cursor:pointer}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:#542532;color:#ffdce2}
+button.small{padding:8px 11px;font-size:13px}.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+input,select{width:100%;background:#111722;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;margin:5px 0 12px}
+label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+nav{position:fixed;bottom:0;left:0;right:0;padding:9px 8px calc(9px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);background:#151b26;border-top:1px solid var(--line);z-index:5}
+nav button{background:transparent;color:var(--muted);padding:8px 2px;font-size:12px}nav button.active{color:var(--accent)}
+nav span{display:block;font-size:20px;margin-bottom:3px}
+.partner{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.dot{width:14px;height:14px;border-radius:50%;flex:none}.avatar{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:700}
+.partner .info{flex:1;min-width:0}.partner .info b{display:block}.partner .info small{color:var(--muted)}
+.hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap}.barline{display:grid;grid-template-columns:minmax(65px,1fr) 2fr 28px;gap:8px;align-items:center;margin:11px 0;font-size:13px}.track{height:11px;background:#30394a;border-radius:9px;overflow:hidden}.fill{height:100%;border-radius:9px}
+#gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}#gate .card{width:min(100%,360px);padding:25px}
+.toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:16px;right:16px;background:#293347;border:1px solid var(--line);padding:13px;border-radius:12px;z-index:20;text-align:center}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+<section id="gate">
+ <div class="card">
+  <div style="font-size:42px">🔒</div><h1>Partner Statistik</h1>
+  <p class="muted" id="gateText">Zadejte PIN</p>
+  <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="PIN (alespoň 4 číslice)" autocomplete="off">
+  <input id="pin2" class="hidden" type="password" inputmode="numeric" maxlength="12" placeholder="Zopakujte PIN" autocomplete="off">
+  <button id="gateBtn" style="width:100%">Odemknout</button><p class="sub" id="gateError"></p>
+ </div>
+</section>
+<div id="app" class="hidden">
+<header><div><h1>Partner Statistik</h1><div class="sub" id="today"></div></div><div style="font-size:25px">◈</div></header>
+<main>
+<section id="home" class="page">
+ <div class="grid">
+  <div class="card metric"><span>Celkem záznamů</span><strong id="totalCount">0</strong></div>
+  <div class="card metric"><span>Partnerů</span><strong id="partnerCount">0</strong></div>
+ </div>
+ <div class="card"><div class="row between"><h2>Poslední záznamy</h2><button class="small secondary" onclick="showPage('records')">Všechny</button></div><div id="recent"></div></div>
+ <button style="width:100%" onclick="openRecord()">＋ Přidat záznam</button>
+</section>
+<section id="partners" class="page hidden">
+ <div class="row between"><h2>Partneři</h2><button onclick="openPartner()">＋ Přidat</button></div>
+ <div class="card" id="partnerList"></div>
+</section>
+<section id="records" class="page hidden">
+ <div class="row between"><h2>Záznamy</h2><button onclick="openRecord()" id="addRecordBtn">＋ Přidat</button></div>
+ <div class="card" id="recordList"></div>
+</section>
+<section id="stats" class="page hidden">
+ <h2>Statistiky</h2>
+ <div class="card">
+  <label><input type="checkbox" id="allTime" checked style="width:auto;margin-right:8px">Celé období</label>
+  <div id="dateFilters" class="hidden">
+   <label>Od</label><input type="date" id="fromDate">
+   <label>Do</label><input type="date" id="toDate">
+  </div>
+ </div>
+ <div class="grid"><div class="card metric"><span>Záznamů ve výběru</span><strong id="filteredCount">0</strong></div><div class="card metric"><span>Aktivních partnerů</span><strong id="activeCount">0</strong></div></div>
+ <div class="card"><h3>Podle partnerů</h3><div id="partnerStats"></div></div>
+ <div class="card"><h3>Po měsících</h3><div id="monthStats"></div></div>
+ <div class="card" id="topPartner"></div>
+</section>
+<section id="settings" class="page hidden">
+ <h2>Nastavení a data</h2>
+ <div class="card"><h3>Záloha</h3><p class="sub">Exportujte soubor se všemi partnery a záznamy. Uložte jej na bezpečné místo.</p><div class="actions"><button onclick="exportData()">Exportovat zálohu</button><button class="secondary" onclick="document.getElementById('importFile').click()">Obnovit zálohu</button><input id="importFile" type="file" accept="application/json" class="hidden"></div></div>
+ <div class="card"><h3>Změna PINu</h3><label>Současný PIN</label><input id="oldPin" type="password" inputmode="numeric"><label>Nový PIN</label><input id="newPin" type="password" inputmode="numeric"><button onclick="changePin()">Změnit PIN</button></div>
+ <div class="card"><h3>Soukromí</h3><p class="sub">Údaje se ukládají v úložišti prohlížeče tohoto iPhonu. PIN obrazovka není šifrováním databáze. Nevytvářejte záznamy na sdíleném zařízení. Pravidelně exportujte zálohu.</p><button class="secondary" onclick="lockApp()">Uzamknout aplikaci</button></div>
+</section>
+</main>
+<nav>
+ <button class="active" data-page="home" onclick="showPage('home')"><span>⌂</span>Přehled</button>
+ <button data-page="partners" onclick="showPage('partners')"><span>♙</span>Partneři</button>
+ <button data-page="records" onclick="showPage('records')"><span>▤</span>Záznamy</button>
+ <button data-page="stats" onclick="showPage('stats')"><span>▥</span>Statistiky</button>
+</nav>
+</div>
+<div id="modal" class="hidden" style="position:fixed;inset:0;background:#000b;z-index:10;display:flex;align-items:end">
+ <div class="card" style="width:100%;max-height:90dvh;overflow:auto;border-radius:22px 22px 0 0;margin:0;padding:20px 18px calc(22px + env(safe-area-inset-bottom))">
+  <div class="row between"><h2 id="modalTitle">Nový záznam</h2><button class="secondary small" onclick="closeModal()">Zavřít</button></div>
+  <div id="modalBody"></div>
+ </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script>
+const KEY='partnerStatistik.v1', PINKEY='partnerStatistik.pin.v1';
+let db={partners:[],records:[]}, editing=null, modalKind='';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>crypto.randomUUID();
+const fmt=d=>new Date(d).toLocaleString('cs-CZ',{dateStyle:'medium',timeStyle:'short'});
+const colorSet=['#9b87f5','#ec6b91','#36b8a4','#4d9be8','#e69b45','#e45e61','#7dba65','#ba83d8'];
+function load(){try{db=JSON.parse(localStorage.getItem(KEY))||{partners:[],records:[]}}catch{db={partners:[],records:[]}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function toast(s){$('toast').textContent=s;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),2300)}
+function hash(s){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''))}
+async function initGate(){
+ const exists=localStorage.getItem(PINKEY);$('gateText').textContent=exists?'Zadejte svůj PIN':'Nastavte nový PIN (minimálně 4 číslice)';
+ $('pin2').classList.toggle('hidden',!!exists);$('gateBtn').textContent=exists?'Odemknout':'Uložit PIN';
+ $('gateBtn').onclick=async()=>{
+  const p=$('pin').value;
+  if(!/^\d{4,12}$/.test(p))return $('gateError').textContent='PIN musí mít 4 až 12 číslic.';
+  if(!exists){if(p!==$('pin2').value)return $('gateError').textContent='PIN kódy se neshodují.';localStorage.setItem(PINKEY,await hash(p));unlock()}
+  else if(await hash(p)===exists)unlock();else{$('gateError').textContent='Nesprávný PIN.';$('pin').value=''}
+ };
+}
+function unlock(){load();$('gate').classList.add('hidden');$('app').classList.remove('hidden');$('today').textContent=new Date().toLocaleDateString('cs-CZ',{dateStyle:'full'});render()}
+function lockApp(){$('app').classList.add('hidden');$('gate').classList.remove('hidden');$('pin').value='';$('gateError').textContent='';initGate()}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(p).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));render()}
+function partnerName(id){const p=db.partners.find(x=>x.id===id);return p?(p.nickname||p.name):'Smazaný partner'}
+function rowRecord(r){const p=db.partners.find(x=>x.id===r.partnerId);return `<div class="partner"><i class="dot" style="background:${p?.color||'#777'}"></i><div class="info"><b>${esc(p?.nickname||p?.name||'Neznámý partner')}</b><small>${esc(fmt(r.date))}</small></div><button class="small secondary" onclick="openRecord('${r.id}')">Upravit</button><button class="small danger" onclick="deleteRecord('${r.id}')">×</button></div>`}
+function render(){
+ $('totalCount').textContent=db.records.length;$('partnerCount').textContent=db.partners.length;
+ $('recent').innerHTML=db.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rowRecord).join('')||'<p class="sub">Zatím žádné záznamy.</p>';
+ $('partnerList').innerHTML=db.partners.map(p=>`<div class="partner"><div class="avatar" style="background:${p.color}">${esc((p.nickname||p.name).slice(0,1).toUpperCase())}</div><div class="info"><b>${esc(p.name)}</b><small>${esc(p.nickname||'Bez přezdívky')} · ${db.records.filter(r=>r.partnerId===p.id).length} záznamů</small></div><button class="small secondary" onclick="openPartner('${p.id}')">Upravit</button><button class="small danger" onclick="deletePartner('${p.id}')">×</button></div>`).join('')||'<p class="sub">Nejdříve přidejte partnera.</p>';
+ $('recordList').innerHTML=db.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(rowRecord).join('')||'<p class="sub">Zatím žádné záznamy.</p>';
+ $('addRecordBtn').disabled=!db.partners.length;
+ renderStats();
+}
+function openModal(title,body){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modal').classList.remove('hidden')}
+function closeModal(){$('modal').classList.add('hidden')}
+function openPartner(id){
+ const p=db.partners.find(x=>x.id===id);editing=id||null;modalKind='partner';
+ openModal(p?'Upravit partnera':'Nový partner',`
+ <label>Jméno</label><input id="pName" value="${esc(p?.name||'')}" placeholder="Jméno">
+ <label>Přezdívka (nepovinné)</label><input id="pNick" value="${esc(p?.nickname||'')}" placeholder="Přezdívka">
+ <label>Barva</label><div class="row" style="flex-wrap:wrap">${colorSet.map(c=>`<button class="small" style="background:${c};width:38px;height:38px;padding:0;border:2px solid ${(p?.color||colorSet[0])===c?'white':'transparent'}" onclick="document.getElementById('pColor').value='${c}'"></button>`).join('')}</div>
+ <input id="pColor" type="color" value="${p?.color||colorSet[0]}"><button style="width:100%" onclick="savePartner()">Uložit partnera</button>`);
+}
+function savePartner(){const name=$('pName').value.trim();if(!name)return toast('Vyplňte jméno.');const item={id:editing||uid(),name,nickname:$('pNick').value.trim(),color:$('pColor').value};if(editing)db.partners=db.partners.map(p=>p.id===editing?item:p);else db.partners.push(item);closeModal();save();toast('Partner uložen.')}
+function deletePartner(id){const p=db.partners.find(x=>x.id===id);if(!confirm(`Smazat partnera ${p.name} a všechny jeho záznamy?`))return;db.partners=db.partners.filter(x=>x.id!==id);db.records=db.records.filter(x=>x.partnerId!==id);save()}
+function openRecord(id){
+ if(!db.partners.length)return toast('Nejdříve přidejte partnera.');
+ const r=db.records.find(x=>x.id===id);editing=id||null;modalKind='record';const d=r?new Date(r.date):new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ openModal(r?'Upravit záznam':'Nový záznam',`
+ <label>Partner</label><select id="rPartner">${db.partners.map(p=>`<option value="${p.id}" ${p.id===r?.partnerId?'selected':''}>${esc(p.nickname||p.name)}</option>`).join('')}</select>
+ <label>Datum a čas</label><input id="rDate" type="datetime-local" value="${local}">
+ <button style="width:100%" onclick="saveRecord()">Uložit záznam</button>`);
+}
+function saveRecord(){const date=new Date($('rDate').value);if(!Number.isFinite(date.getTime()))return toast('Zkontrolujte datum a čas.');const item={id:editing||uid(),partnerId:$('rPartner').value,date:date.toISOString()};if(editing)db.records=db.records.map(r=>r.id===editing?item:r);else db.records.push(item);closeModal();save();toast('Záznam uložen.')}
+function deleteRecord(id){if(!confirm('Opravdu chcete tento záznam smazat?'))return;db.records=db.records.filter(r=>r.id!==id);save()}
+function renderStats(){
+ const all=$('allTime').checked;$('dateFilters').classList.toggle('hidden',all);
+ let rows=db.records;if(!all){const from=$('fromDate').value?new Date($('fromDate').value+'T00:00:00'):new Date(0);const to=$('toDate').value?new Date($('toDate').value+'T23:59:59.999'):new Date();rows=rows.filter(r=>new Date(r.date)>=from&&new Date(r.date)<=to)}
+ const counts=db.partners.map(p=>({p,n:rows.filter(r=>r.partnerId===p.id).length})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+ $('filteredCount').textContent=rows.length;$('activeCount').textContent=counts.length;
+ const max=Math.max(1,...counts.map(x=>x.n));
+ $('partnerStats').innerHTML=counts.map(x=>`<div class="barline"><span>${esc(x.p.nickname||x.p.name)}</span><div class="track"><div class="fill" style="width:${x.n/max*100}%;background:${x.p.color}"></div></div><b>${x.n}</b></div>`).join('')||'<p class="sub">Žádné záznamy v období.</p>';
+ const months={};rows.forEach(r=>{const d=new Date(r.date);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');months[k]=(months[k]||0)+1});
+ const entries=Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0]));const mm=Math.max(1,...entries.map(x=>x[1]));
+ $('monthStats').innerHTML=entries.map(([k,n])=>`<div class="barline"><span>${k}</span><div class="track"><div class="fill" style="width:${n/mm*100}%;background:#a78bfa"></div></div><b>${n}</b></div>`).join('')||'<p class="sub">Žádné záznamy v období.</p>';
+ $('topPartner').innerHTML=counts.length?`<b>Nejčastější partner:</b><p>${esc(counts[0].p.nickname||counts[0].p.name)} · ${counts[0].n} záznamů</p>`:'<p class="sub">Zatím bez statistiky.</p>';
+}
+$('allTime').addEventListener('change',renderStats);$('fromDate').addEventListener('change',renderStats);$('toDate').addEventListener('change',renderStats);
+async function changePin(){const old=$('oldPin').value,n=$('newPin').value;if(await hash(old)!==localStorage.getItem(PINKEY))return toast('Současný PIN není správný.');if(!/^\d{4,12}$/.test(n))return toast('Nový PIN musí mít 4 až 12 číslic.');localStorage.setItem(PINKEY,await hash(n));$('oldPin').value='';$('newPin').value='';toast('PIN změněn.')}
+function exportData(){const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),...db},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='partner-statistik-zaloha.json';a.click();URL.revokeObjectURL(a.href)}
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;db={partners:x.partners,records:x.records};save();toast('Záloha obnovena.')}catch{toast('Soubor zálohy není platný.')}e.target.value=''});
+initGate();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
