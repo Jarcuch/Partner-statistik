@@ -26,7 +26,7 @@ label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
 nav{position:fixed;bottom:0;left:0;right:0;padding:9px 8px calc(9px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);background:#151b26;border-top:1px solid var(--line);z-index:5}
 nav button{background:transparent;color:var(--muted);padding:8px 2px;font-size:12px}nav button.active{color:var(--accent)}
 nav span{display:block;font-size:20px;margin-bottom:3px}
-.partner{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.dot{width:14px;height:14px;border-radius:50%;flex:none}.avatar{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:700}
+.partner{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.dot{width:14px;height:14px;border-radius:50%;flex:none}.avatar{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:700;overflow:hidden;flex:none}.avatar img{width:100%;height:100%;object-fit:cover}.photo-preview{width:96px;height:96px;border-radius:18px;object-fit:cover;display:block;margin:10px 0;border:1px solid var(--line)}
 .partner .info{flex:1;min-width:0}.partner .info b{display:block}.partner .info small{color:var(--muted)}
 .hidden{display:none!important}.actions{display:flex;gap:8px;flex-wrap:wrap}.barline{display:grid;grid-template-columns:minmax(65px,1fr) 2fr 28px;gap:8px;align-items:center;margin:11px 0;font-size:13px}.track{height:11px;background:#30394a;border-radius:9px;overflow:hidden}.fill{height:100%;border-radius:9px}
 #gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}#gate .card{width:min(100%,360px);padding:25px}
@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 </section>
 <section id="settings" class="page hidden">
  <h2>Nastavení a data</h2>
- <div class="card"><h3>Záloha</h3><p class="sub">Exportujte soubor se všemi partnery a záznamy. Uložte jej na bezpečné místo.</p><div class="actions"><button onclick="exportData()">Exportovat zálohu</button><button class="secondary" onclick="document.getElementById('importFile').click()">Obnovit zálohu</button><input id="importFile" type="file" accept="application/json" class="hidden"></div></div>
+ <div class="card"><h3>Záloha</h3><p class="sub">Export obsahuje partnery, fotografie, záliby, nedostatky, poznámky a záznamy. Soubor JSON uchovávejte v soukromí. PIN není součástí zálohy.</p><div class="actions"><button onclick="exportData()">Exportovat všechna data (JSON)</button><button class="secondary" onclick="document.getElementById('importFile').click()">Importovat data (JSON)</button><input id="importFile" type="file" accept="application/json" class="hidden"></div></div>
  <div class="card"><h3>Zabezpečení</h3>
  <label>Automatické zamykání</label><select id="lockDelay" onchange="updateSecurity()"><option value="0">Při opuštění aplikace</option><option value="1">Po 1 minutě</option><option value="5">Po 5 minutách</option><option value="15">Po 15 minutách</option></select>
  <label><input type="checkbox" id="limitAttempts" onchange="updateSecurity()" style="width:auto"> Dočasně blokovat po 5 chybných pokusech</label>
@@ -142,10 +142,16 @@ function lockApp(){closeModal();$('app').classList.add('hidden');$('gate').class
 function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(p).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));render()}
 function partnerName(id){const p=db.partners.find(x=>x.id===id);return p?(p.nickname||p.name):'Smazaný partner'}
 function rowRecord(r){const p=db.partners.find(x=>x.id===r.partnerId);return `<div class="partner"><i class="dot" style="background:${p?.color||'#777'}"></i><div class="info"><b>${esc(p?.nickname||p?.name||'Neznámý partner')}</b><small>${esc(fmt(r.date))}${Array.isArray(r.hobbies)&&r.hobbies.length?' · Záliby: '+esc(r.hobbies.join(', ')):''}${Array.isArray(r.flaws)&&r.flaws.length?' · Nedostatky: '+esc(r.flaws.join(', ')):''}</small>${r.note?`<div class="sub" style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:5px">${esc(r.note)}</div>`:''}</div><button class="small secondary" onclick="openRecord('${r.id}')">Upravit</button><button class="small danger" onclick="deleteRecord('${r.id}')">×</button></div>`}
+function safePhoto(v){return typeof v==='string'&&/^data:image\/(jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(v)?v:''}
+function avatar(p){const photo=safePhoto(p.photo);return photo?`<div class="avatar" style="background:${esc(p.color)}"><img src="${photo}" alt="Profilová fotografie"></div>`:`<div class="avatar" style="background:${esc(p.color)}">${esc((p.nickname||p.name).slice(0,1).toUpperCase())}</div>`}
+let workingPhoto='';
+function previewPhoto(){const el=$('photoPreview');if(!el)return;const photo=safePhoto(workingPhoto);el.innerHTML=photo?`<img class="photo-preview" src="${photo}" alt="Náhled fotografie">`:'<p class="sub">Bez profilové fotografie.</p>'}
+async function choosePhoto(input){const file=input.files?.[0];if(!file)return;if(!file.type.startsWith('image/'))return toast('Vyber obrázek.');if(file.size>15*1024*1024)return toast('Fotografie je příliš velká (max. 15 MB).');try{const url=URL.createObjectURL(file);const img=new Image();try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});const c=document.createElement('canvas');const size=320;c.width=size;c.height=size;const side=Math.min(img.naturalWidth,img.naturalHeight);c.getContext('2d').drawImage(img,(img.naturalWidth-side)/2,(img.naturalHeight-side)/2,side,side,0,0,size,size);workingPhoto=c.toDataURL('image/jpeg',.72);previewPhoto()}finally{URL.revokeObjectURL(url)}}catch{toast('Fotografii se nepodařilo načíst.')}}
+function removePhoto(){workingPhoto='';if($('pPhoto'))$('pPhoto').value='';previewPhoto()}
 function render(){
  $('totalCount').textContent=db.records.length;$('partnerCount').textContent=db.partners.length;
  $('recent').innerHTML=db.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rowRecord).join('')||'<p class="sub">Zatím žádné záznamy.</p>';
- $('partnerList').innerHTML=db.partners.map(p=>`<div class="partner"><div class="avatar" style="background:${p.color}">${esc((p.nickname||p.name).slice(0,1).toUpperCase())}</div><div class="info"><b>${esc(p.name)}</b><small>${esc(p.nickname||'Bez přezdívky')} · ${db.records.filter(r=>r.partnerId===p.id).length} záznamů</small></div><button class="small secondary" onclick="openPartner('${p.id}')">Upravit</button><button class="small danger" onclick="deletePartner('${p.id}')">×</button></div>`).join('')||'<p class="sub">Nejdříve přidejte partnera.</p>';
+ $('partnerList').innerHTML=db.partners.map(p=>`<div class="partner">${avatar(p)}<div class="info"><b>${esc(p.name)}</b><small>${esc(p.nickname||'Bez přezdívky')} · ${db.records.filter(r=>r.partnerId===p.id).length} záznamů</small></div><button class="small secondary" onclick="openPartner('${p.id}')">Upravit</button><button class="small danger" onclick="deletePartner('${p.id}')">×</button></div>`).join('')||'<p class="sub">Nejdříve přidejte partnera.</p>';
  $('recordList').innerHTML=db.records.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(rowRecord).join('')||'<p class="sub">Zatím žádné záznamy.</p>';
  $('addRecordBtn').disabled=!db.partners.length;
  renderStats();
@@ -157,6 +163,10 @@ function openPartner(id){
  openModal(p?'Upravit partnera':'Nový partner',`
  <label>Jméno</label><input id="pName" value="${esc(p?.name||'')}" placeholder="Jméno">
  <label>Přezdívka (nepovinné)</label><input id="pNick" value="${esc(p?.nickname||'')}" placeholder="Přezdívka">
+ <label>Profilová fotografie (nepovinné)</label><div id="photoPreview"></div>
+ <input id="pPhoto" type="file" accept="image/*" onchange="choosePhoto(this)">
+ <button class="small secondary" type="button" onclick="removePhoto()">Odebrat fotografii</button>
+ <p class="sub">Fotografie se zmenší na 320 × 320 px, uloží pouze do tohoto zařízení a zahrne do zálohy.</p>
  <label>Barva</label><div class="row" style="flex-wrap:wrap">${colorSet.map(c=>`<button class="small" style="background:${c};width:38px;height:38px;padding:0;border:2px solid ${(p?.color||colorSet[0])===c?'white':'transparent'}" onclick="document.getElementById('pColor').value='${c}'"></button>`).join('')}</div>
  <input id="pColor" type="color" value="${p?.color||colorSet[0]}">
  <label>Záliby</label><div id="hobbyChips" class="chips"></div>
@@ -165,7 +175,7 @@ function openPartner(id){
  <div class="row"><input id="newFlaw" placeholder="Nový nedostatek" style="margin:0"><button type="button" onclick="addFlaw()">＋</button></div>
  <p class="sub">Záliby i nedostatky můžeš upravovat. Starší záznamy zůstanou zachované.</p>
  <button style="width:100%" onclick="savePartner()">Uložit partnera</button>`);
- workingHobbies=Array.isArray(p?.hobbies)?[...p.hobbies]:[];workingFlaws=Array.isArray(p?.flaws)?[...p.flaws]:[];renderHobbyChips();renderFlawChips();
+ workingHobbies=Array.isArray(p?.hobbies)?[...p.hobbies]:[];workingFlaws=Array.isArray(p?.flaws)?[...p.flaws]:[];workingPhoto=safePhoto(p?.photo);previewPhoto();renderHobbyChips();renderFlawChips();
 }
 function renderHobbyChips(){$('hobbyChips').innerHTML=workingHobbies.map((h,i)=>`<span class="chip">${esc(h)} <button type="button" onclick="removeHobby(${i})" aria-label="Odebrat">×</button></span>`).join('')||'<span class="sub">Zatím žádné záliby.</span>'}
 function addHobby(){const h=$('newHobby').value.trim();if(!h)return;if(workingHobbies.some(x=>x.toLowerCase()===h.toLowerCase()))return toast('Záliba již existuje.');workingHobbies.push(h);$('newHobby').value='';renderHobbyChips()}
@@ -173,7 +183,7 @@ function removeHobby(i){workingHobbies.splice(i,1);renderHobbyChips()}
 function renderFlawChips(){$('flawChips').innerHTML=workingFlaws.map((h,i)=>`<span class="chip">${esc(h)} <button type="button" onclick="removeFlaw(${i})" aria-label="Odebrat">×</button></span>`).join('')||'<span class="sub">Zatím žádné nedostatky.</span>'}
 function addFlaw(){const h=$('newFlaw').value.trim();if(!h)return;if(workingFlaws.some(x=>x.toLowerCase()===h.toLowerCase()))return toast('Nedostatek již existuje.');workingFlaws.push(h);$('newFlaw').value='';renderFlawChips()}
 function removeFlaw(i){workingFlaws.splice(i,1);renderFlawChips()}
-function savePartner(){const name=$('pName').value.trim();if(!name)return toast('Vyplňte jméno.');const item={id:editing||uid(),name,nickname:$('pNick').value.trim(),color:$('pColor').value,hobbies:[...workingHobbies],flaws:[...workingFlaws]};if(editing)db.partners=db.partners.map(p=>p.id===editing?item:p);else db.partners.push(item);closeModal();save();toast('Partner uložen.')}
+function savePartner(){const name=$('pName').value.trim();if(!name)return toast('Vyplňte jméno.');const item={id:editing||uid(),name,nickname:$('pNick').value.trim(),color:$('pColor').value,hobbies:[...workingHobbies],flaws:[...workingFlaws],photo:workingPhoto};if(editing)db.partners=db.partners.map(p=>p.id===editing?item:p);else db.partners.push(item);closeModal();try{save();toast('Partner uložen.')}catch(e){toast('Úložiště je plné. Zkus menší počet fotografií.');}}
 function deletePartner(id){const p=db.partners.find(x=>x.id===id);if(!confirm(`Smazat partnera ${p.name} a všechny jeho záznamy?`))return;db.partners=db.partners.filter(x=>x.id!==id);db.records=db.records.filter(x=>x.partnerId!==id);save()}
 function openRecord(id){
  if(!db.partners.length)return toast('Nejdříve přidejte partnera.');
@@ -209,8 +219,8 @@ function renderStats(){
 }
 $('allTime').addEventListener('change',renderStats);$('fromDate').addEventListener('change',renderStats);$('toDate').addEventListener('change',renderStats);
 async function changePin(){const old=$('oldPin').value,n=$('newPin').value;if(await hash(old)!==localStorage.getItem(PINKEY))return toast('Současný PIN není správný.');if(!/^\d{4,8}$/.test(n))return toast('Nový PIN musí mít 4 až 8 číslic.');if(n!==$('newPin2').value)return toast('Nové PINy se neshodují.');localStorage.setItem(PINKEY,await hash(n));$('oldPin').value='';$('newPin').value='';$('newPin2').value='';toast('PIN změněn.')}
-function exportData(){const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),...db},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='partner-statistik-zaloha.json';a.click();URL.revokeObjectURL(a.href)}
-$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;if(security.confirm){const p=prompt('Pro potvrzení importu zadejte současný PIN:');if(p===null)return;if(await hash(p)!==localStorage.getItem(PINKEY))return toast('Nesprávný PIN.')}db={partners:x.partners,records:x.records};save();toast('Záloha obnovena.')}catch{toast('Soubor zálohy není platný.')}e.target.value=''});
+function exportData(){const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),...db},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='partner-statistik-zaloha-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(x.partners.length>10000||x.records.length>100000)throw Error();for(const p of x.partners){if(typeof p.id!=='string'||typeof p.name!=='string')throw Error();if(p.photo&&!safePhoto(p.photo))throw Error()}for(const r of x.records){if(typeof r.id!=='string'||typeof r.partnerId!=='string'||typeof r.date!=='string')throw Error()}if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;if(security.confirm){const p=prompt('Pro potvrzení importu zadejte současný PIN:');if(p===null)return;if(await hash(p)!==localStorage.getItem(PINKEY))return toast('Nesprávný PIN.')}const previous=db;db={partners:x.partners,records:x.records};try{save();toast('Záloha obnovena.')}catch{db=previous;toast('Import selhal: úložiště je plné.')} }catch{toast('Soubor zálohy není platný.')}e.target.value=''});
 syncSecurity();initGate();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
