@@ -49,7 +49,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
  </div>
 </section>
 <div id="app" class="hidden">
-<header><div><h1>Partner Statistik</h1><div class="sub" id="today"></div></div><img src="icon-192.png" alt="Logo Partner Statistik" width="40" height="40" style="width:40px;height:40px;object-fit:contain;flex-shrink:0;clip-path:polygon(50% 1%,58% 6%,70% 11%,84% 15%,90% 17%,90% 43%,89% 54%,85% 65%,78% 75%,68% 85%,57% 94%,50% 99%,43% 94%,32% 85%,22% 75%,15% 65%,11% 54%,10% 43%,10% 17%,16% 15%,30% 11%,42% 6%)"></header>
+<header><div><h1>Partner Statistik</h1><div class="sub" id="today"></div></div><img src="icon-192.png" alt="Logo Partner Statistik" width="40" height="40" style="width:40px;height:40px;object-fit:contain;flex-shrink:0;mix-blend-mode:multiply;clip-path:polygon(50% 1%,58% 6%,70% 11%,84% 15%,90% 17%,90% 43%,89% 54%,85% 65%,78% 75%,68% 85%,57% 94%,50% 99%,43% 94%,32% 85%,22% 75%,15% 65%,11% 54%,10% 43%,10% 17%,16% 15%,30% 11%,42% 6%)"></header>
 <main>
 <section id="home" class="page">
  <div class="grid">
@@ -244,6 +244,6 @@ async function refreshUpdateInfo(){
 }
 refreshUpdateInfo();
 syncSecurity();initGate();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=28').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=29').catch(()=>{});
 </script>
 </body></html>
