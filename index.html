@@ -227,6 +227,22 @@ $('allTime').addEventListener('change',renderStats);$('fromDate').addEventListen
 async function changePin(){const old=$('oldPin').value,n=$('newPin').value;if(await hash(old)!==localStorage.getItem(PINKEY))return toast('Současný PIN není správný.');if(!/^\d{4,8}$/.test(n))return toast('Nový PIN musí mít 4 až 8 číslic.');if(n!==$('newPin2').value)return toast('Nové PINy se neshodují.');localStorage.setItem(PINKEY,await hash(n));$('oldPin').value='';$('newPin').value='';$('newPin2').value='';toast('PIN změněn.')}
 function exportData(){const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),...db},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='partner-statistik-zaloha-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
 $('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(!Array.isArray(x.partners)||!Array.isArray(x.records))throw Error();if(x.partners.length>10000||x.records.length>100000)throw Error();for(const p of x.partners){if(typeof p.id!=='string'||typeof p.name!=='string')throw Error();if(p.photo&&!safePhoto(p.photo))throw Error()}for(const r of x.records){if(typeof r.id!=='string'||typeof r.partnerId!=='string'||typeof r.date!=='string')throw Error()}if(!confirm('Obnovit zálohu? Aktuální data budou nahrazena.'))return;if(security.confirm){const p=prompt('Pro potvrzení importu zadejte současný PIN:');if(p===null)return;if(await hash(p)!==localStorage.getItem(PINKEY))return toast('Nesprávný PIN.')}const previous=db;db={partners:x.partners,records:x.records};try{save();toast('Záloha obnovena.')}catch{db=previous;toast('Import selhal: úložiště je plné.')} }catch{toast('Soubor zálohy není platný.')}e.target.value=''});
+
+async function refreshUpdateInfo(){
+ const el=document.getElementById('updateInfo');if(!el)return;
+ const saved=localStorage.getItem('partnerStatistik.lastUpdate');
+ el.textContent='Poslední aktualizace: '+(saved||'zjišťuji…');
+ try{
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),7000);
+  let response;
+  try{response=await fetch('https://api.github.com/repos/Jarcuch/Partner-statistik/commits?per_page=1',{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timeout)}
+  if(!response.ok)throw Error('GitHub API');
+  const commits=await response.json();const date=commits[0]?.commit?.committer?.date;if(!date)throw Error('Missing date');
+  const formatted=new Date(date).toLocaleString('cs-CZ',{timeZone:'Europe/Prague',dateStyle:'medium',timeStyle:'short'});
+  el.textContent='Poslední aktualizace: '+formatted;localStorage.setItem('partnerStatistik.lastUpdate',formatted);
+ }catch{el.textContent='Poslední aktualizace: '+(saved||'nelze zjistit offline')}
+}
+refreshUpdateInfo();
 syncSecurity();initGate();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
