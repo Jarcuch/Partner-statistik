@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Partner Statistik">
-<link rel="manifest" href="manifest.webmanifest?v=25">
-<link rel="apple-touch-icon" href="icon-180.png?v=25">
+<link rel="manifest" href="manifest.webmanifest?v=26">
+<link rel="apple-touch-icon" href="icon-180.png?v=26">
 <title>Partner Statistik</title>
 <style>
 :root{color-scheme:dark;--bg:#0e1119;--panel:#191f2b;--panel2:#222a39;--muted:#9ba6b8;--text:#f5f6fa;--accent:#a78bfa;--line:#30394a;--danger:#ff647c}
@@ -35,6 +35,7 @@ nav span{display:block;font-size:20px;margin-bottom:3px}
 #gate .card{width:min(100%,360px);padding:25px;background:rgba(19,17,33,.87);border:1px solid rgba(194,159,255,.4);box-shadow:0 16px 55px rgba(0,0,0,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .toast{position:fixed;top:calc(10px + env(safe-area-inset-top));left:16px;right:16px;background:#293347;border:1px solid var(--line);padding:13px;border-radius:12px;z-index:20;text-align:center}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+.update-info{text-align:center;color:var(--muted);font-size:12px;padding:20px 12px 12px}
 </style>
 </head>
 <body>
@@ -93,6 +94,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
  <h3>Změna PINu</h3><label>Současný PIN</label><input id="oldPin" type="password" inputmode="numeric" autocomplete="off"><label>Nový PIN (4–8 číslic)</label><input id="newPin" type="password" inputmode="numeric" autocomplete="off"><label>Potvrzení nového PINu</label><input id="newPin2" type="password" inputmode="numeric" autocomplete="off"><button onclick="changePin()">Změnit PIN</button></div>
  <div class="card"><h3>Soukromí</h3><p class="sub">Údaje se ukládají v úložišti prohlížeče tohoto iPhonu. PIN chrání vstup do aplikace, ale data v úložišti prohlížeče nejsou šifrovaná. Face ID není v této verzi podporováno. Nevytvářejte záznamy na sdíleném zařízení. Pravidelně exportujte zálohu.</p><button class="secondary" onclick="lockApp()">Uzamknout aplikaci</button></div>
 </section>
+<footer class="update-info" id="updateInfo">Poslední aktualizace: načítání…</footer>
 </main>
 <nav>
  <button class="active" data-page="home" onclick="showPage('home')"><span>⌂</span>Přehled</button>
