@@ -94,7 +94,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
  <h3>Změna PINu</h3><label>Současný PIN</label><input id="oldPin" type="password" inputmode="numeric" autocomplete="off"><label>Nový PIN (4–8 číslic)</label><input id="newPin" type="password" inputmode="numeric" autocomplete="off"><label>Potvrzení nového PINu</label><input id="newPin2" type="password" inputmode="numeric" autocomplete="off"><button onclick="changePin()">Změnit PIN</button></div>
  <div class="card"><h3>Soukromí</h3><p class="sub">Údaje se ukládají v úložišti prohlížeče tohoto iPhonu. PIN chrání vstup do aplikace, ale data v úložišti prohlížeče nejsou šifrovaná. Face ID není v této verzi podporováno. Nevytvářejte záznamy na sdíleném zařízení. Pravidelně exportujte zálohu.</p><button class="secondary" onclick="lockApp()">Uzamknout aplikaci</button></div>
 </section>
-<footer class="update-info" id="updateInfo">Poslední aktualizace: načítání…</footer>
+<footer class="update-info" id="updateInfo">Poslední aktualizace: 18. 11. 2026, 17:36</footer>
 </main>
 <nav>
  <button class="active" data-page="home" onclick="showPage('home')"><span>⌂</span>Přehled</button>
@@ -230,7 +230,7 @@ $('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if
 
 async function refreshUpdateInfo(){
  const el=document.getElementById('updateInfo');if(!el)return;
- const saved=localStorage.getItem('partnerStatistik.lastUpdate');
+ const saved=localStorage.getItem('partnerStatistik.lastUpdate')||'18. 11. 2026, 17:36';
  el.textContent='Poslední aktualizace: '+(saved||'zjišťuji…');
  try{
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),7000);
@@ -244,6 +244,6 @@ async function refreshUpdateInfo(){
 }
 refreshUpdateInfo();
 syncSecurity();initGate();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js?v=27').catch(()=>{});
 </script>
 </body></html>
